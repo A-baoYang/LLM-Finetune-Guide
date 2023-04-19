@@ -1,6 +1,6 @@
 # 大型語言模型 指令微調流程統整 LLM Instruction Fine-Tuning
 
-本專案整理了 LLaMA, Bloom, ChatGLM 三種開源 LLMs 的運行範例。
+本專案整理了微調大型語言模型的重要觀念和實作的程式框架，針對訓練和推論則提供 LLaMA, Bloom, ChatGLM 三種開源 LLMs 的運行範例。
 
 如果你希望盡量減少試錯，歡迎報名我親自錄製的手把手教學課程：
 
@@ -55,15 +55,15 @@
 為了要能在消費級顯卡上順利運行大型語言模型，我們需要將模型進行壓縮，詳細可以分為以下幾種：
 
 ### 網絡剪枝
-刪除 LLM 中在這個任務下不那麼重要的神經元
+「刪除 LLM 中在這個任務下不那麼重要的神經元」
 
 - 原先是用在解決 Overfitting 問題上
 - 先得出 LLM 的神經元重要性和權重，刪除重要性較低的神經元，得到較小的模型；使用這個小模型去做微調，可以節省載入和微調的資源
 
-    ![](https://pic2.zhimg.com/80/v2-a142cf6b751e5ad987d0997d27413415_1440w.webp)
+    ![](https://i.imgur.com/uWGSgym.png)
 
 ### 模型量化
-減少模型權重的空間佔用
+「減少模型權重的空間佔用」
 
 #### Mix Precision 混合精度訓練
 - 預設權重參數精度是 FP32(float32)，為了減少佔用空間將部分權重從 FP32 轉為 FP16 來混合訓練，如此便可以增加 batch_size
@@ -82,54 +82,69 @@
 2. 對 outliers 的部分以 FP16 精度做矩陣乘法，其他部分則使用 int8 精度進行 vector-wise 量化
 3. 最後將 int8 量化的部分恢復成 FP16，然後和 outliers 部分合併
 
-![](https://lowin.li/image/8%E4%BD%8D%E7%9F%A9%E9%98%B5%E4%B9%98%E6%B3%95%E6%8F%90%E9%80%9F/Matmul.png)
+![](https://i.imgur.com/DVGMAwy.png)
 
 > Outlier features 在 Transformers 中會均勻分布在每一層結構中，而且當閾值 >= 6 時則都可以得到無損的推論結果
 
-評估量化過程損失
+**評估量化過程損失**
+
+`BLOOM-176B` 在 LM-eval-harness 上的基準，可以看到絕對誤差低於標準差，
+故量化過程維持了 LLM 原始的效能。
+
+![](https://i.imgur.com/jQRUewO.png)
+
+但是減慢了 15-23% 的運行速度
+
+![](https://i.imgur.com/U1kqoMQ.png)
 
 
 ### 結構化矩陣
-一個 m * n 矩陣只用少於 m * n 參數來描述 (AlphaTensor)
+「一個 m * n 矩陣只用少於 m * n 參數來描述」 (ex: AlphaTensor)
 
 - 可以減少空間佔用、透過快速的矩陣-向量乘法 ＆ 梯度計算 顯著加快訓練＆推理速度
 
 ### 知識蒸餾
-利用知識轉移 (knowledge transfer）來壓縮模型
+「利用知識轉移 (knowledge transfer）來壓縮模型」
 
 - 亦稱為 Teacher-Student Networks
 - 讓小模型學習大模型 Softmax 層輸出的機率向量分佈，就像是將大模型擁有的知識轉移給小模型；能夠有效減少計算成本。
 - 缺點是只能用於有 Softmax 損失函數的分類貼標任務
-
-還有更多論文提出但目前還不確定如何用於 LLM 的方法：
 
 ### 遷移/壓縮卷積濾波器：主要應用於影像辨識
 - 在 Inception 結構中使用將 3 * 3 卷積分解成兩個 1 * 1 卷積
 - SqueezeNet 提出以 1 * 1 卷積替代 3 * 3 卷積；與 AlexNet 相比創建了減少 50 倍參數的神經網絡
 
 ### PyTorch v.s. Tensorflow
-
 這兩個常見的深度學習框架在模型壓縮的實現方便性上有沒有差異呢？
 
 由於 PyTorch 支援的是動態圖 (dynamic computational graph)，比 Tensorflow 靜態圖來說更容易分層訓練、進行參數修改、靈活性更高，更適合用於實驗和研究。
 
-> 補 flexgen 方法介紹
-
 ## 高效微調方法
-
 可以成功載入模型還不夠，微調時所需的 GPU 資源遠比推論更大；
 但實際上我們不需要微調所有參數，因為並非所有大型語言模型參數都適用於當前的任務，
 我們其實可以透過一些方式來只微調部分參數、節省訓練資源。
 
-在這邊由 Huggingface 提出的 PEFT 便是集大成，包含以下幾種方法：
+在這邊由 Huggingface 提出的 PEFT 框架將實作集大成，包含以下幾種方法：
 
-- LoRA
-- P-Tuning
-- Prefix Tuning
-- Prompt Tuning
-- 在移動裝置上對模型加速比壓縮更重要，例如在數學計算上將加乘法轉為邏輯和位移運算
+### LoRA: Low-Rank Adaptation of Large Language Models
+「透過學習小參數的 low-rank matrix 來近似權重矩陣的參數更新，訓練時只優化 low-rank matrix 的參數」
+
+
+### P-Tuning
+
+### Prefix/Prompt Tuning
+「在模型輸入或隱藏層添加 k 個額外 trainable 的前綴 tokens．只訓練這些不實際代表任何字元的虛擬 tokens」
+
+![](https://pic1.zhimg.com/80/v2-162a7488d334c00a50697b732721adb4_1440w.webp)
+
+在模型輸入的前面加上一段連續向量序列，稱之為 prefix，接著固定 LLM 所有參數，只微調特定任務的 prefix；
+因此每個下游任務只產生小量計算成本
+
+### Adapter Tuning
+「將較小的神經網絡層插入到預訓練模型的每一層，微調下游任務時只訓練這些小網絡層(Adapter)的參數」
 
 ## 模型加速
+- 在移動裝置上對模型加速比壓縮更重要，例如在數學計算上將加乘法轉為邏輯和位移運算
 
 使用了高效微調方法，可以將模型在 finetune 時所使用的資源減到最小，
 最後我們要做 scale，開多個 process 來加速訓練和推論。這一類的技術稱為分散式訓練，其中包含了不同策略：
@@ -145,6 +160,8 @@
 - accelerate
     - 提供 deepspeed, fsdp 策略
 - DeepSpeed
+- flexgen Offload
+- ClossaiAI
 
 ### 運行訓練
 
