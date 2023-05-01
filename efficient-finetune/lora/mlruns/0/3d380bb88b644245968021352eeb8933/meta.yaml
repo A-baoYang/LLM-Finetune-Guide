@@ -1,0 +1,15 @@
+artifact_uri: file:///home/jovyan/gpt/open_gpt/LLM-Finetune-Guide/efficient-finetune/lora/mlruns/0/3d380bb88b644245968021352eeb8933/artifacts
+end_time: 1682838486576
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 3d380bb88b644245968021352eeb8933
+run_name: finetuned/ee-bloom-1024-3e-4
+run_uuid: 3d380bb88b644245968021352eeb8933
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1682836550511
+status: 3
+tags: []
+user_id: jovyan

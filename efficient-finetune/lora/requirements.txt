@@ -1,0 +1,10 @@
+opencc
+click
+datasets
+loralib
+sentencepiece
+git+https://github.com/huggingface/transformers.git
+accelerate
+bitsandbytes
+git+https://github.com/huggingface/peft.git
+gradio
