@@ -1,1 +1,0 @@
-{'AutoConfig': 'configuration_chatglm.ChatGLMConfig', 'AutoModel': 'modeling_chatglm.ChatGLMForConditionalGeneration', 'AutoModelForSeq2SeqLM': 'modeling_chatglm.ChatGLMForConditionalGeneration'}
