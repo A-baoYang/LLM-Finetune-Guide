@@ -1,0 +1,15 @@
+artifact_uri: file:///home/jovyan/gpt/open_gpt/LLM-Finetune-Guide/efficient-finetune/ptuning/v2/mlruns/0/0daaa3969c414ce9962519dbeac5e03f/artifacts
+end_time: 1682666199827
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 0daaa3969c414ce9962519dbeac5e03f
+run_name: finetuned/ee-chatglm-6b-pt-512-2e-2
+run_uuid: 0daaa3969c414ce9962519dbeac5e03f
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1682657993137
+status: 3
+tags: []
+user_id: jovyan
