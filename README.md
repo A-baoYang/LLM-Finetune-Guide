@@ -12,13 +12,13 @@
 切換語言版本： \[ [English](README.md) | [繁體中文](README-zhtw.md) | [简体中文](README-zhcn.md) \]
 
 > 如果你希望減少試錯，歡迎報名我親自錄製的手把手教學課程：
-> - 教學課程預購：https://dataagent.kaik.io/learning/llm-instruction-finetune
+> - 教學課程調查問卷： https://www.surveycake.com/s/kn0bL
 
-## 最新消息 Development Log
+<!-- ## 最新消息 Development Log
 
-- [2023/04/15] 更新新資料集：
+- [2023/04/15] 更新新資料集： -->
 
-## 資料集 Datasets
+<!-- ## 資料集 Datasets
 
 - medical
 
@@ -30,7 +30,7 @@
 - Bloom
 - ChatGLM-6B
 
-詳細介紹請查看 [LLM 介紹](./docs/LLMs.md)
+詳細介紹請查看 [LLM 介紹](./docs/LLMs.md) -->
 
 ## 高效微調方法 Efficient Parameters Fine-Tuning Methods
 
@@ -228,10 +228,10 @@ CUDA_VISIBLE_DEVICES=0 python cli_demo.py \
 如果這項專案對你的工作或研究有幫助，請引用：
 
 ```
-@Misc{LLM-FineTuning-Guide,
-  title = {LLM FineTuning Guide},
+@Misc{LLM-Finetune-Guide,
+  title = {LLM Finetune Guide},
   author = {A-baoYang},
-  howpublished = {\url{https://github.com/A-baoYang/LLM-Finetuning-Guide}},
+  howpublished = {\url{https://github.com/A-baoYang/LLM-Finetune-Guide}},
   year = {2023}
 }
 ```
