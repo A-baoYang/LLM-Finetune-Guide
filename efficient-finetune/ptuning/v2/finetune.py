@@ -412,11 +412,12 @@ def main():
                     predict_results.label_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True
                 )
                 labels = [label.strip() for label in labels]
-                output_prediction_file = os.path.join(training_args.output_dir, "generated_predictions.txt")
-                with open(output_prediction_file, "w", encoding="utf-8") as writer:
-                    for p, l in zip(predictions, labels):
-                        res = json.dumps({"labels": l, "predict": p}, ensure_ascii=False)
-                        writer.write(f"{res}\n")
+                output = [{"labels": l, "predict": p} for p, l in zip(predictions, labels)]
+                with open(os.path.join(training_args.output_dir, data_args.output_file), "w", encoding="utf-8") as writer:
+                    json.dump(output, writer, ensure_ascii=False, indent=4)
+                    # for p, l in zip(predictions, labels):
+                    #     res = json.dumps({"labels": l, "predict": p}, ensure_ascii=False)
+                    #     writer.write(f"{res}\n")
     return results
 
 

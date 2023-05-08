@@ -7,7 +7,7 @@ BATCH_SIZE=2
 EPOCHS=50
 MAX_STEPS=3000
 SAVE_STEPS=100
-DATATAG=ee-no-instruction
+DATATAG=multi-ee-no-instruction
 
 CUDA_VISIBLE_DEVICES=0 python finetune.py \
     --do_train \

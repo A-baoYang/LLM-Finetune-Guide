@@ -1,47 +1,47 @@
-# LLM Instruction Fine-Tuning
+# 大型语言模型指令微调流程 LLM Instruction Fine-Tuning
 
 ![GitHub Repo stars](https://img.shields.io/github/stars/A-baoYang/LLM-FineTuning-Guide?style=social)
 ![GitHub Code License](https://img.shields.io/github/license/A-baoYang/LLM-FineTuning-Guide)
 ![GitHub last commit](https://img.shields.io/github/last-commit/A-baoYang/LLM-FineTuning-Guide)
 ![GitHub pull request](https://img.shields.io/badge/PRs-welcome-blue)
 
-This project compiles important concepts and programming frameworks for fine-tuning large language models, providing executable examples for training and inference of LLMs.
+本专案整理了微调大型语言模型的重要观念和实作的程式框架，针对 LLMs 的训练和推论提供运行范例。
 
-👋 Welcome to join our Line community Open Chat: [fine-tuning large language models and OpenAI applications](assets/line-openchat.jpg)
+👋 欢迎加入我们的 Line 社群 Open Chat：[大型语言模型微调及 OpenAI 应用讨论群](assets/line-openchat.jpg)
 
-Switch language version: \[ [English](README.md) | [繁體中文](README-zhtw.md) | [简体中文](README-zhcn.md) \]
+切换语言版本： \[ [English](README.md) | [繁体中文](README-zhtw.md) | [简体中文](README-zhcn.md) \]
 
-> If you want to reduce trial and error, you are welcome to enroll in my personally recorded step-by-step tutorial course:
-> - Fill out the survey to receive a discount voucher: [https://www.surveycake.com/s/kn0bL](https://www.surveycake.com/s/kn0bL)
+> 如果你希望减少试错，欢迎报名我亲自录製的手把手教学课程：
+> - 填写问卷领取优惠折扣： [https://www.surveycake.com/s/kn0bL](https://www.surveycake.com/s/kn0bL)
 
 <!-- ## 最新消息 Development Log
 
-- [2023/04/15] 更新新資料集： -->
+- [2023/04/15] 更新新资料集： -->
 
-<!-- ## 資料集 Datasets
+<!-- ## 资料集 Datasets
 
 - medical
 
-詳細內容請查看 [instruction-datasets/README.md](./instruction-datasets/README.md)
+详细内容请查看 [instruction-datasets/README.md](./instruction-datasets/README.md)
 
-## 支援的大型語言模型 LLMs
+## 支援的大型语言模型 LLMs
 
 - LLaMA
 - Bloom
 - ChatGLM-6B
 
-詳細介紹請查看 [LLM 介紹](./docs/LLMs.md) -->
+详细介绍请查看 [LLM 介绍](./docs/LLMs.md) -->
 
-## Efficient Parameters Fine-Tuning Methods
+## 高效微调方法 Efficient Parameters Fine-Tuning Methods
 
-Currently, the following efficient fine-tuning methods are supported:
+目前支援以下高效微调方式：
 
 - LoRA 
 - P-tuning V2
 
-Training Arguments:
+硬体需求：
 
-| LLM | Fine-Tuning Method | Quantization Methods | Distributed Training Strategy | Batch Size | Required GPU memory (per card) | Speed |
+| LLM | 微调方法 | 量化方法 | 分散式策略 | Batch Size | 所需 GPU 记忆体(单张) | 速度 |
 | --- | --- | --- | --- | --- | --- | --- |
 | Bloom | LoRA | INT8 | None | 1 | 14GB | 86.71s/it |
 | Bloom | LoRA | INT8 | Torch DDP on 2 GPUs | 1 | 13GB | 44.47s/it |
@@ -50,17 +50,17 @@ Training Arguments:
 
 ---
 
-## Getting Started
+## 如何开始？ Getting Started
 
-### Data Preparation
+### 资料集准备 Data Preparation
 
-You can choose to fine-tune with open-source or academic datasets, but if the open-source datasets do not fit your application scenario, you will need to use custom datasets for fine-tuning.
+你可以选择使用开源或学术资料集进行微调；但如果开源资料集不符合您的应用情境，您就会需要使用自定义资料集来进行。
 
-In this project, the format used for the dataset is `.json`. You will need to put the train, dev, and test files of the separated dataset in the `instruction-datasets/` directory. You can also create a new folder to place the files, but the path should be specified accordingly in the commands.
+在本专案资料集所使用格式是 `.json` ，你会需要将资料集 train, dev, test 分隔后的档案放到 `instruction-datasets/` 下，您也可以另外创新资料夹放置，只是路径指定的差异，都可以在 commands 做修改。
 
-### Requirements
+### 环境准备 Requirements
 
-Different fine-tuning methods have their required packages set up. To install them, simply navigate to the folder with `requirements.txt` and run:
+针对不同的微调方法有设定好所需的套件，只要进到有 `requirements.txt` 的资料夹下运行
 
 ```bash
 git clone https://github.com/A-baoYang/LLM-FineTuning-Guide.git
@@ -70,11 +70,11 @@ cd LLM-Finetune-Guide/efficient-finetune/ptuning/v2
 pip install -r requirements.txt
 ```
 
-## Fine-Tuning
+## 微调 Fine-Tuning
 
-After the data is prepared, you can start fine-tuning. The program has already been written and you can specify the data/model path and parameter replacement through the command.
+资料准备好之后就可以启动微调，这裡已经将程式写好，当中的资料/模型路径、参数置换都可以透过指令来指定。
 
-### Fine-Tuning with single GPU
+### 单张 GPU 微调 Fine-Tuning with single GPU
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python finetune.py \
@@ -88,11 +88,11 @@ CUDA_VISIBLE_DEVICES=0 python finetune.py \
     --output_dir finetuned/$DATATAG-$MODEL_TYPE-pt-$PRE_SEQ_LEN-$LR
 ```
 
-Please refer to the complete parameter and command settings at: [finetune.sh](./efficient-finetune/ptuning/v2/finetune.sh)
+完整的参数和指令设定请见： [finetune.sh](./efficient-finetune/ptuning/v2/finetune.sh)
 
-### Fine-Tuning with multiple GPUs
+### 多张 GPU 微调 Fine-Tuning with multiple GPUs
 
-- Start with `torchrun`
+- 使用 torchrun 启动
 
 ```bash
 torchrun --standalone --nnodes=1  --nproc_per_node=2 finetune.py --do_train \
@@ -105,9 +105,9 @@ torchrun --standalone --nnodes=1  --nproc_per_node=2 finetune.py --do_train \
     --output_dir finetuned/$DATATAG-$MODEL_TYPE-pt-$PRE_SEQ_LEN-$LR \
 ```
 
-Please refer to the complete parameter and command settings at:  [finetune-ddp.sh](./efficient-finetune/ptuning/v2/finetune-ddp.sh)
+完整的参数和指令设定请见： [finetune-ddp.sh](./efficient-finetune/ptuning/v2/finetune-ddp.sh)
 
-- Start with `accelerate`
+- 使用 accelerate 启动
 
 ```bash
 accelerate launch finetune.py --do_train \
@@ -120,9 +120,9 @@ accelerate launch finetune.py --do_train \
     --output_dir finetuned/$DATATAG-$MODEL_TYPE-pt-$PRE_SEQ_LEN-$LR \
 ```
 
-### Use DeepSpeed ZeRO strategy for distributed training
+### 使用 DeepSpeed ZeRO 策略进行分散式训练
 
-- Start with `accelerate` and `config_file` arguments
+- 使用 accelerate 带上 config_file 启动
 
 ```bash
 accelerate launch --config_file ../../config/use_deepspeed.yaml finetune.py --do_train \
@@ -135,7 +135,7 @@ accelerate launch --config_file ../../config/use_deepspeed.yaml finetune.py --do
     --output_dir finetuned/$DATATAG-$MODEL_TYPE-pt-$PRE_SEQ_LEN-$LR \
 ```
 
-- Start with `deepspeed`
+- 使用 deepspeed 启动
 
 ```bash
 deepspeed --num_nodes 1 --num_gpus 2 finetune.py \
@@ -150,9 +150,9 @@ deepspeed --num_nodes 1 --num_gpus 2 finetune.py \
     --output_dir finetuned/$DATATAG-$MODEL_TYPE-pt-$PRE_SEQ_LEN-$LR \
 ```
 
-- For more fine-tuning examples, see: [efficient-finetune/README.md](./efficient-finetune/README.md)
+- 更多微调案例请看：[efficient-finetune/README.md](./efficient-finetune/README.md)
 
-## Evaluation & Prediction
+## 模型评估与预测 Evaluation & Prediction
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python finetune.py \
@@ -167,9 +167,9 @@ CUDA_VISIBLE_DEVICES=0 python finetune.py \
     --output_dir finetuned/$DATATAG-$MODEL_TYPE-pt-$PRE_SEQ_LEN-$LR
 ```
 
-## Run Inference
+## 模型推论 Run Inference
 
-- Terminal
+- 终端机
 
 ```bash
 cd LLM-Finetune-Guide/efficient-finetune/ptuning/v2/serve/
@@ -179,8 +179,7 @@ CUDA_VISIBLE_DEVICES=0 python cli_demo.py \
     --is_cuda True
 ```
 
-- Web demo
-
+- 网页展示
 ```bash
 cd LLM-Finetune-Guide/efficient-finetune/lora/serve/
 python ui.py
@@ -193,11 +192,11 @@ cd LLM-Finetune-Guide/efficient-finetune/lora/serve/
 python api.py
 ```
 
-## Running on CPU environment
+## 在 CPU 环境下提速运行
 
-The ability to run fine-tuned large language models in a CPU environment would greatly reduce the application threshold of LLMs.
+如果可以做到在 CPU 环境下运行 finetune 过的大语言模型，会最大比例的降低 LLM 的应用门槛。
 
-- Use INT4 to run in CPU environment
+- 使用 INT4 于 CPU 环境运行，速度可接受
 
 ```bash
 cd LLM-Finetune-Guide/efficient-finetune/ptuning/v2/serve/
@@ -212,13 +211,13 @@ CUDA_VISIBLE_DEVICES=0 python cli_demo.py \
 
 ## License
 
-- Repository License: [Apache-2.0 License](./LICENSE)
-- Model License: Please refer to the license provided by each language model for details. 
-<!-- For more information, see [LLM Introduction](./docs/LLMs.md) -->
+- 专案 License：[Apache-2.0 License](./LICENSE)
+- 模型 License：请参照各大语言模型所提供之 License
+<!-- 详细请见 [LLM 介绍](./docs/LLMs.md) -->
 
 ## Citation
 
-If this project is helpful to your work or research, please star & cite it as follows:
+如果这项专案对你的工作或研究有帮助，请引用：
 
 ```
 @Misc{LLM-Finetune-Guide,
@@ -231,7 +230,7 @@ If this project is helpful to your work or research, please star & cite it as fo
 
 ## Acknowledgement
 
-This project was inspired by some amazing projects, which are listed below. Thanks for their great work.
+此专案从以下地方获取灵感，感谢这些很讚的专案：
 
 - [THUDM/ChatGLM-6B]
 - [ymcui/Chinese-LLaMA-Alpaca]
@@ -239,4 +238,4 @@ This project was inspired by some amazing projects, which are listed below. Than
 
 ## Contact
 
-If you have any questions or suggestions, please feel free to email us for inquiries: [jiunyi.yang.abao@gmail.com](mailto:jiunyi.yang.abao@gmail.com)
+有任何问题或建议，欢迎来信询问： [jiunyi.yang.abao@gmail.com](mailto:jiunyi.yang.abao@gmail.com)

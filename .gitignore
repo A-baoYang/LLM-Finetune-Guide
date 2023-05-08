@@ -132,4 +132,7 @@ dmypy.json
 mlruns/
 ee/
 ee-no-instruction/
+multi-ee-no-instruction
+multi-ee/
+temp-largitdata
 finetuned/

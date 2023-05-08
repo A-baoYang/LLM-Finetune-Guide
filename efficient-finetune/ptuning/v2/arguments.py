@@ -104,6 +104,12 @@ class DataTrainingArguments:
             "help": "An optional input test data file to evaluate the metrics (rouge) on (a jsonlines or csv file)."
         },
     )
+    output_file: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "output filename for evaluation generated results"
+        },
+    )
     overwrite_cache: bool = field(
         default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
     )
