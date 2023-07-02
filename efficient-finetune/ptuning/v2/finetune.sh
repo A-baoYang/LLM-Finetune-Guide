@@ -30,6 +30,7 @@ CUDA_VISIBLE_DEVICES=0 python finetune.py \
     --max_steps $MAX_STEPS \
     --logging_steps 10 \
     --save_steps $SAVE_STEPS \
+    --save_total_limit 3 \
     --learning_rate $LR \
     --pre_seq_len $PRE_SEQ_LEN \
     --quantization_bit 4

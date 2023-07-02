@@ -71,18 +71,29 @@ def decide_model(args, device_map):
         tokenizer.pad_token_id = 0
         tokenizer.padding_side = "left"  # Allow batched inference
 
-    model = prepare_model_for_int8_training(model)
-    config = LoraConfig(
-        r=args.lora_r,
-        lora_alpha=args.lora_alpha,
-        target_modules=args.lora_target_modules,
-        lora_dropout=args.lora_dropout,
-        bias="none",
-        task_type="CAUSAL_LM",
-    )
-    model = get_peft_model(model, config)
-    model.print_trainable_parameters()
+    if args.train_file:
+        model = prepare_model_for_int8_training(model)
+        config = LoraConfig(
+            r=args.lora_r,
+            lora_alpha=args.lora_alpha,
+            target_modules=args.lora_target_modules,
+            lora_dropout=args.lora_dropout,
+            bias="none",
+            task_type="CAUSAL_LM",
+        )
+        model = get_peft_model(model, config)
+        model.print_trainable_parameters()
     return tokenizer, model
+
+
+def load_lora_weight(model, lora_weight_path: str):
+    if os.path.exists(lora_weight_path):
+        model = PeftModel.from_pretrained(
+            model,
+            lora_weight_path,
+            torch_dtype=torch.float16,
+        )
+    return model
 
 
 @click.command()
@@ -90,7 +101,6 @@ def decide_model(args, device_map):
     "--base_model",
     "base_model",
     type=str,
-    # default="/home/jovyan/gpt/model/bigscience/bloomz-7b1-mt",
     default="decapoda-research/llama-7b-hf",
 )
 @click.option("--model_type", "model_type", type=str, default="llama")
@@ -98,13 +108,19 @@ def decide_model(args, device_map):
     "--train_file",
     "train_file",
     type=str,
-    default="../../instruction-datasets/alpaca-en-zh-train.json",
+    default="",
 )
 @click.option(
     "--val_file",
     "val_file",
     type=str,
-    default="../../instruction-datasets/alpaca-en-zh-dev.json",
+    default="",
+)
+@click.option(
+    "--test_file",
+    "test_file",
+    type=str,
+    default="",
 )
 @click.option(
     "--output_dir",
@@ -134,6 +150,7 @@ def main(
     model_type: str,
     train_file: str,
     val_file: str,
+    test_file: str,
     output_dir: str,
     # training hyperparams
     batch_size: int,
@@ -159,6 +176,7 @@ def main(
         f"model_type: {model_type}\n"
         f"train_file: {train_file}\n"
         f"val_file: {val_file}\n"
+        f"test_file: {test_file}\n"
         f"output_dir: {output_dir}\n"
         f"batch_size: {batch_size}\n"
         f"micro_batch_size: {micro_batch_size}\n"
@@ -198,10 +216,17 @@ def main(
         device_map = "auto"
 
     tokenizer, model = decide_model(args=local_args, device_map=device_map)
+    if test_file:
+        model = load_lora_weight(model=model, lora_weight_path=output_dir)
+
+    data_files = {}
+    if train_file:
+        data_files["train"] = train_file
     if val_file:
-        data = load_dataset("json", data_files={"train": train_file, "val": val_file})
-    else:
-        data = load_dataset("json", data_files={"train": train_file})
+        data_files["val"] = val_file
+    if test_file:
+        data_files["test"] = test_file
+    data = load_dataset("json", data_files=data_files)
 
 
     def generate_and_tokenize_prompt(data_point):
@@ -218,7 +243,9 @@ def main(
         return tokenized_full_prompt
 
     
-    if "val" in data:
+    if "test" in data:
+        test_data = data["test"].shuffle().map(generate_and_tokenize_prompt)
+    elif "val" in data:
         train_data = data["train"].shuffle().map(generate_and_tokenize_prompt)
         val_data = data["val"].shuffle().map(generate_and_tokenize_prompt)
     else:
@@ -232,46 +259,78 @@ def main(
             train_data = data["train"].shuffle().map(generate_and_tokenize_prompt)
             val_data = None
 
-    trainer = transformers.Trainer(
-        model=model,
-        train_dataset=train_data,
-        eval_dataset=val_data,
-        args=transformers.TrainingArguments(
-            per_device_train_batch_size=micro_batch_size,
-            per_device_eval_batch_size=micro_batch_size,
-            gradient_accumulation_steps=gradient_accumulation_steps,
-            warmup_steps=100,
-            num_train_epochs=num_epochs,
-            learning_rate=learning_rate,
-            fp16=True,
-            logging_steps=10,
-            evaluation_strategy="steps" if val_file or val_set_size > 0 else "no",
-            save_strategy="steps",
-            eval_steps=save_steps if val_set_size > 0 else None,
-            save_steps=save_steps,
-            output_dir=output_dir,
-            save_total_limit=save_total_limit,
-            load_best_model_at_end=True if val_set_size > 0 else False,
-            dataloader_num_workers=world_size if world_size > 0 else 0,
-            ddp_find_unused_parameters=False if is_distributed else None,
-            group_by_length=group_by_length,
-        ),
-        data_collator=transformers.DataCollatorForSeq2Seq(
-            tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
-        ),
-    )
-    model.config.use_cache = False
+    if "test" in data:
+        trainer = transformers.Trainer(
+            model=model,
+            train_dataset=None,
+            eval_dataset=None,
+            args=transformers.TrainingArguments(
+                per_device_eval_batch_size=micro_batch_size,
+                gradient_accumulation_steps=gradient_accumulation_steps,
+                output_dir=output_dir
+            ),
+            data_collator=transformers.DataCollatorForSeq2Seq(
+                tokenizer,
+                model=model,
+                label_pad_token_id=-1,
+                pad_to_multiple_of=None,
+                padding=False
+            )
+        )
+        predict_results = trainer.predict(test_data, metric_key_prefix="predict")
+        if trainer.is_world_process_zero():
+            predictions = tokenizer.batch_decode(
+                predict_results.predictions, skip_special_tokens=True, clean_up_tokenization_spaces=True
+            )
+            predictions = [pred.strip() for pred in predictions]
+            labels = tokenizer.batch_decode(
+                predict_results.label_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True
+            )
+            labels = [label.strip() for label in labels]
+            output = [{"labels": l, "predict": p} for p, l in zip(predictions, labels)]
+            with open(os.path.join(args.output_dir, "predict_generation.json"), "w", encoding="utf-8") as writer:
+                json.dump(output, writer, ensure_ascii=False, indent=4)
+    else:
+        trainer = transformers.Trainer(
+            model=model,
+            train_dataset=train_data,
+            eval_dataset=val_data,
+            args=transformers.TrainingArguments(
+                per_device_train_batch_size=micro_batch_size,
+                per_device_eval_batch_size=micro_batch_size,
+                gradient_accumulation_steps=gradient_accumulation_steps,
+                warmup_steps=100,
+                num_train_epochs=num_epochs,
+                learning_rate=learning_rate,
+                fp16=True,
+                logging_steps=10,
+                evaluation_strategy="steps" if val_file or val_set_size > 0 else "no",
+                save_strategy="steps",
+                eval_steps=save_steps if val_set_size > 0 else None,
+                save_steps=save_steps,
+                output_dir=output_dir,
+                save_total_limit=save_total_limit,
+                load_best_model_at_end=True if val_set_size > 0 else False,
+                dataloader_num_workers=world_size if world_size > 0 else 0,
+                ddp_find_unused_parameters=False if is_distributed else None,
+                group_by_length=group_by_length,
+            ),
+            data_collator=transformers.DataCollatorForSeq2Seq(
+                tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
+            ),
+        )
+        model.config.use_cache = False
 
-    old_state_dict = model.state_dict
-    model.state_dict = (
-        lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())
-    ).__get__(model, type(model))
+        old_state_dict = model.state_dict
+        model.state_dict = (
+            lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())
+        ).__get__(model, type(model))
 
-    if torch.__version__ >= "2" and sys.platform != "win32":
-        model = torch.compile(model)
+        if torch.__version__ >= "2" and sys.platform != "win32":
+            model = torch.compile(model)
 
-    trainer.train()
-    model.save_pretrained(output_dir)
+        trainer.train()
+        model.save_pretrained(output_dir)
 
 
 if __name__ == "__main__":

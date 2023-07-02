@@ -1,8 +1,9 @@
-MODEL_PATH=/home/jovyan/gpt/model/bigscience/bloomz-7b1-mt
-MODEL_TYPE=bloom
-DATATAG=ee
+# MODEL_PATH=/home/jovyan/gpt/model/bigscience/bloomz-7b1-mt
+MODEL_PATH=/home/jovyan/gpt/model/decapoda-research/chinese-llama-7b-plus-combined
+MODEL_TYPE=llama
+DATATAG=multi-ee
 EPOCHS=50
-LR=3e-4
+LR=1e-3
 BATCH_SIZE=16
 MICRO_BATCH_SIZE=1
 MAX_LENGTH=1024
