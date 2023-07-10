@@ -28,6 +28,7 @@ parser.add_argument('--offload_dir', default=None, type=str,
 parser.add_argument('--output_type', default='pth',choices=['pth','huggingface'], type=str,
                     help="save the merged model in pth or huggingface format.")
 parser.add_argument('--output_dir', default='./', type=str)
+parser.add_argument('--max_shard_size', type=str, default="500MB", help="Number of shards when saving model.")
 
 
 emb_to_model_size = {
@@ -199,6 +200,7 @@ if __name__=='__main__':
     output_dir = args.output_dir
     output_type = args.output_type
     offload_dir = args.offload_dir
+    max_shard_size = args.max_shard_size
 
     print(f"Base model: {base_model_path}")
     print(f"LoRA model(s) {lora_model_paths}:")
@@ -288,9 +290,9 @@ if __name__=='__main__':
 
     tokenizer.save_pretrained(output_dir)
 
-    if output_type=='huggingface':
+    if output_type == 'huggingface':
         print("Saving to Hugging Face format...")
-        LlamaForCausalLM.save_pretrained(base_model, output_dir) #, state_dict=deloreanized_sd)
+        LlamaForCausalLM.save_pretrained(base_model, output_dir, max_shard_size=max_shard_size)  #, state_dict=deloreanized_sd)
     else: # output_type=='pth
         print("Saving to pth format...")
 

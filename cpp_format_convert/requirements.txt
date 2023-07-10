@@ -1,0 +1,2 @@
+LLAMA_CUBLAS=1
+CMAKE_ARGS="-DLLAMA_CUBLAS=on" FORCE_CMAKE=1 llama-cpp-python==0.1.48 --force-reinstall --upgrade --no-cache-dir
