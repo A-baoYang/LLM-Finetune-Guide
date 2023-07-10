@@ -58,7 +58,7 @@ def main(start_date: str, end_date: str):
         DATATAG=multi-ee-no-instruction
         DATE_STR={date_str}
 
-        CUDA_VISIBLE_DEVICES=2,3 accelerate launch --main_process_port 29051 --config_file ../../config/use_deepspeed.yaml finetune.py --do_predict \
+        CUDA_VISIBLE_DEVICES=0,1 accelerate launch --main_process_port 29050 --config_file ../../config/use_deepspeed.yaml finetune.py --do_predict \
             --validation_file ../../../instruction-datasets/temp-largitdata/$DATE_STR.json \
             --test_file ../../../instruction-datasets/temp-largitdata/$DATE_STR.json \
             --overwrite_cache \
