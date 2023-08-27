@@ -3,11 +3,12 @@ MODEL_TYPE=chatglm-6b
 MAX_LENGTH=512
 PRE_SEQ_LEN=512
 LR=2e-2
-BATCH_SIZE=2
-EPOCHS=10
-MAX_STEPS=10000
+BATCH_SIZE=1
+EPOCHS=5
+MAX_STEPS=3000
 SAVE_STEPS=100
-DATATAG=ner-no-instruction
+DATATAG=medical-qa-zhcn-no-instruction-v2
+CACHE_DIR=/home/jovyan/gpt/model/huggingface
 
 
 # torchrun --standalone --nnodes=1  --nproc_per_node=2 finetune.py --do_train --do_eval \
@@ -28,14 +29,14 @@ DATATAG=ner-no-instruction
 #     --predict_with_generate \
 #     --num_train_epochs $EPOCHS \
 #     --max_steps $MAX_STEPS \
-#     --logging_steps 10 \
+#     --logging_steps $SAVE_STEPS \
 #     --save_steps $SAVE_STEPS \
 #     --save_total_limit 3 \
 #     --learning_rate $LR \
 #     --pre_seq_len $PRE_SEQ_LEN \
 #     --quantization_bit 4
 
-CUDA_VISIBLE_DEVICES=2,3 accelerate launch --main_process_port 29052 --config_file ../../config/use_deepspeed.yaml finetune.py --do_train --do_eval \
+CUDA_VISIBLE_DEVICES=0,1 accelerate launch --main_process_port 29052 --config_file ../../config/use_deepspeed.yaml finetune.py --do_train --do_eval \
     --train_file ../../../instruction-datasets/$DATATAG/train.json \
     --validation_file ../../../instruction-datasets/$DATATAG/dev.json \
     --prompt_column input \
@@ -43,6 +44,7 @@ CUDA_VISIBLE_DEVICES=2,3 accelerate launch --main_process_port 29052 --config_fi
     --overwrite_cache \
     --model_name_or_path $MODEL_PATH \
     --output_dir finetuned/$DATATAG-$MODEL_TYPE-pt-$PRE_SEQ_LEN-$LR \
+    --cache_dir $CACHE_DIR \
     --overwrite_output_dir \
     --max_source_length $MAX_LENGTH \
     --max_target_length $MAX_LENGTH \
@@ -52,7 +54,7 @@ CUDA_VISIBLE_DEVICES=2,3 accelerate launch --main_process_port 29052 --config_fi
     --predict_with_generate \
     --num_train_epochs $EPOCHS \
     --max_steps $MAX_STEPS \
-    --logging_steps 10 \
+    --logging_steps $SAVE_STEPS \
     --save_steps $SAVE_STEPS \
     --save_total_limit 3 \
     --learning_rate $LR \
@@ -69,7 +71,7 @@ CUDA_VISIBLE_DEVICES=2,3 accelerate launch --main_process_port 29052 --config_fi
 #     --overwrite_cache \
 #     --model_name_or_path $MODEL_PATH \
 #     --output_dir finetuned/$DATATAG-$MODEL_TYPE-pt-$PRE_SEQ_LEN-$LR \
-#     # --resume_from_checkpoint finetuned/$DATATAG-$MODEL_TYPE-pt-$PRE_SEQ_LEN-$LR/qcheckpoint-100 \
+#     --resume_from_checkpoint finetuned/$DATATAG-$MODEL_TYPE-pt-$PRE_SEQ_LEN-$LR/qcheckpoint-100 \
 #     --overwrite_output_dir \
 #     --max_source_length $MAX_LENGTH \
 #     --max_target_length $MAX_LENGTH \
@@ -79,7 +81,7 @@ CUDA_VISIBLE_DEVICES=2,3 accelerate launch --main_process_port 29052 --config_fi
 #     --predict_with_generate \
 #     --num_train_epochs $EPOCHS \
 #     --max_steps $MAX_STEPS \
-#     --logging_steps 10 \
+#     --logging_steps $SAVE_STEPS \
 #     --save_steps $SAVE_STEPS \
 #     --save_total_limit 3 \
 #     --learning_rate $LR \

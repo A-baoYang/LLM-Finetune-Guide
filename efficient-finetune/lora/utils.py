@@ -39,17 +39,20 @@ def tokenize(tokenizer, prompt, cutoff_len, add_eos_token=True):
 
 
 def generate_prompt(data_point):
-    if data_point["input"]:
-        return ("以下是一個描述任務的指令，以及一個與任務資訊相關的輸入。請撰寫一個能適當完成此任務指令的回覆\n\n"
-        f'### 指令：\n{data_point["instruction"]}\n\n### 輸入：\n{data_point["input"]}\n\n'
-        f'### 回覆：\n{data_point["output"]}')
+    if "input" in data_point:
+        return (
+            "以下是一個描述任務的指令，以及一個與任務資訊相關的輸入。請撰寫一個能適當完成此任務指令的回覆\n\n"
+            f'### 指令：\n{data_point["instruction"]}\n\n### 輸入：\n{data_point["input"]}\n\n'
+            f'### 回覆：\n{data_point["output"]}'
+        )
     else:
-        return ("以下是一個描述任務的指令。請撰寫一個能適當完成此任務指令的回覆\n\n"
-        f'### 指令：\n{data_point["instruction"]}\n\n### 回覆：\n{data_point["output"]}')
+        return (
+            "以下是一個描述任務的指令。請撰寫一個能適當完成此任務指令的回覆\n\n"
+            f'### 指令：\n{data_point["instruction"]}\n\n### 回覆：\n{data_point["output"]}'
+        )
 
 
 class PythonLiteralOption(click.Option):
-
     def type_cast_value(self, ctx, value):
         try:
             return ast.literal_eval(value)

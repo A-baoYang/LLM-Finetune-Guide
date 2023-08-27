@@ -3,9 +3,13 @@ import json
 import os
 import sys
 
+import jieba
+import numpy as np
 import torch
 import transformers
+from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
 from peft import PeftModel
+from rouge_chinese import Rouge
 from tqdm import tqdm
 
 assert (
@@ -135,27 +139,58 @@ def generate_text(dev_data, batch_size, tokenizer, model, skip_special_tokens = 
     return res
 
 
+def compute_metrics(decoded_preds, decoded_labels):
+    score_dict = {"rouge-1": [], "rouge-2": [], "rouge-l": [], "bleu-4": []}
+    for pred, label in tqdm(zip(decoded_preds, decoded_labels)):
+        hypothesis = list(jieba.cut(pred))
+        reference = list(jieba.cut(label))
+        rouge = Rouge()
+        if not hypothesis:
+            hypothesis = "empty response"
+        scores = rouge.get_scores(" ".join(hypothesis), " ".join(reference))
+        result = scores[0]
+
+        for k, v in result.items():
+            score_dict[k].append(round(v["f"] * 100, 4))
+        bleu_score = sentence_bleu(
+            [list(label)],
+            list(pred),
+            smoothing_function=SmoothingFunction().method3,
+        )
+        score_dict["bleu-4"].append(round(bleu_score * 100, 4))
+
+    for k, v in score_dict.items():
+        score_dict[k] = float(np.mean(v))
+    return score_dict
+
+
 def main(args):
-    dev_data = load_dev_data(args.dev_file)[:100]
-    res = generate_text(dev_data, batch_size, tokenizer, model)
-    with open(args.output_file, 'w') as f:
-        json.dump(res, f, ensure_ascii=False, indent=4)
+    # dev_data = load_dev_data(args.dev_file)[:100]
+    # res = generate_text(dev_data, batch_size, tokenizer, model)
+    # with open(f"{args.finetuned_dir}/{args.output_filename}.json", 'w') as f:
+    #     json.dump(res, f, ensure_ascii=False, indent=4)
+
+    with open(f"{args.finetuned_dir}/{args.output_filename}.json", 'r') as f:
+        res = json.load(f)
+    score_dict = compute_metrics(decoded_labels=[r["target"] for r in res], decoded_preds=[r["predict"] for r in res])
+    with open(f"{args.finetuned_dir}/rouge_score-{args.output_filename}.json", 'w') as f:
+        json.dump(score_dict, f, ensure_ascii=False, indent=4)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate")
     parser.add_argument("--dev_file", type=str, required=True)
+    parser.add_argument("--finetuned_dir", default="", type=str, help="finetuned folder with lora wigehts")
     parser.add_argument("--model_name_or_path", type=str, required=True, help="pretrained language model")
     parser.add_argument("--max_length", type=int, default=512, help="max length of dataset")
     parser.add_argument("--dev_batch_size", type=int, default=2, help="batch size")
-    parser.add_argument("--lora_weights", default="", type=str, help="use lora")
-    parser.add_argument("--output_file", type=str, default="data_dir/predictions.json")
+    parser.add_argument("--output_filename", type=str, default="predictions.json")
 
     args = parser.parse_args()
-    batch_size = args.dev_batch_size
+    # batch_size = args.dev_batch_size
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
-    tokenizer.pad_token_id = 0
-    tokenizer.padding_side = "left"
-    model = get_model(args.model_name_or_path)
+    # tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
+    # tokenizer.pad_token_id = 0
+    # tokenizer.padding_side = "left"
+    # model = get_model(args.model_name_or_path)
     main(args)

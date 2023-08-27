@@ -41,7 +41,7 @@ def main(start_date: str, end_date: str):
         date_str = date_str.replace("-", "")
         if date_str in ["20221001"]:
             continue
-        logging.info(f"Extracting {date_str}...")
+        print(f"Extracting {date_str}...")
         print(date_str)
 
         os.system(
@@ -57,8 +57,9 @@ def main(start_date: str, end_date: str):
         LR=2e-2
         DATATAG=multi-ee-no-instruction
         DATE_STR={date_str}
+        CACHE_DIR=/home/jovyan/gpt/model/huggingface
 
-        CUDA_VISIBLE_DEVICES=0,1 accelerate launch --main_process_port 29050 --config_file ../../config/use_deepspeed.yaml finetune.py --do_predict \
+        CUDA_VISIBLE_DEVICES=2,3 accelerate launch --main_process_port 29051 --config_file ../../config/use_deepspeed.yaml finetune.py --do_predict \
             --validation_file ../../../instruction-datasets/temp-largitdata/$DATE_STR.json \
             --test_file ../../../instruction-datasets/temp-largitdata/$DATE_STR.json \
             --overwrite_cache \
@@ -68,6 +69,7 @@ def main(start_date: str, end_date: str):
             --model_name_or_path THUDM/chatglm-6b \
             --ptuning_checkpoint finetuned/$DATATAG-chatglm-6b-pt-$PRE_SEQ_LEN-$LR/checkpoint-$STEP \
             --output_dir finetuned/$DATATAG-chatglm-6b-pt-$PRE_SEQ_LEN-$LR \
+            --cache_dir $CACHE_DIR \
             --overwrite_output_dir \
             --max_source_length $MAX_LENGTH \
             --max_target_length $MAX_LENGTH \
@@ -82,10 +84,12 @@ def main(start_date: str, end_date: str):
         pred_path = f"/home/jovyan/gpt/open_gpt/LLM-Finetune-Guide/efficient-finetune/ptuning/v2/finetuned/multi-ee-no-instruction-chatglm-6b-pt-512-2e-2/generated-prediction-{date_str}.json"
         gcs_dir = "gs://dst-largitdata/domestic/temp-manual-finevent"
         news, pred = read_data(news_path), read_data(pred_path)
+
         try:
             assert len(news) == len(pred)
         except Exception:
             logging.error("prediction sample size not equal to original sample size!")
+
         for i in tqdm(range(len(news))):
             news[i]["predict"] = pred[i]["predict"]
 
@@ -96,13 +100,8 @@ def main(start_date: str, end_date: str):
         )
         logging.info(news["predict"][0])
         store_path = f'{gcs_dir}/{Path(pred_path).name.split(".")[0]}.ndjson'
-        news.to_json(
-            store_path,
-            lines=True,
-            orient="records",
-            compression="gzip",
-        )
-        logging.info(f"FinEvent result has been stored to {store_path}")
+        news.to_json(store_path, lines=True, orient="records", compression="gzip")
+
         os.remove(news_path)
         os.remove(pred_path)
 

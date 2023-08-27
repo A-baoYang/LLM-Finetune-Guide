@@ -1,0 +1,9 @@
+llama:
+  - decapoda-research/llama-7b-hf
+  - decapoda-research/llama-13b-hf
+  - ziqingyang/chinese-llama-2-7b
+  - ziqingyang/chinese-llama-2-13b
+  - ziqingyang/chinese-alpaca-2-7b
+  - ziqingyang/chinese-alpaca-2-7b
+bloom:
+  - bigscience/bloomz-7b1-mt

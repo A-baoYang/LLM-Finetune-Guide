@@ -4,6 +4,7 @@ datasets
 loralib
 sentencepiece
 git+https://github.com/huggingface/transformers.git
+# git+https://github.com/huggingface/transformers.git@32ff06403d48fa018a33ccab02a5f9d3eb8b078b
 accelerate
 bitsandbytes
 git+https://github.com/huggingface/peft.git

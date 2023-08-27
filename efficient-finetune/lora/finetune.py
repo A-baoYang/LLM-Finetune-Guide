@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from collections import namedtuple
@@ -25,47 +26,62 @@ from transformers import (
     LlamaTokenizer,
     set_seed,
 )
-from utils import PythonLiteralOption, check_distributed, generate_prompt, tokenize
+from utils import check_distributed, generate_prompt, tokenize
 
 
 def decide_model(args, device_map):
-    ModelClass = namedtuple("ModelClass", ('tokenizer', 'model'))
+    ModelClass = namedtuple("ModelClass", ("tokenizer", "model"))
     _MODEL_CLASSES = {
-        "llama": ModelClass(**{
-            "tokenizer": LlamaTokenizer,
-            "model": LlamaForCausalLM,
-        }),
-        "chatglm": ModelClass(**{
-            "tokenizer": AutoTokenizer, #ChatGLMTokenizer,
-            "model":  AutoModel, #ChatGLMForConditionalGeneration,
-        }),
-        "bloom": ModelClass(**{
-            "tokenizer": BloomTokenizerFast,
-            "model": BloomForCausalLM,
-        }),
-        "Auto": ModelClass(**{
-            "tokenizer": AutoTokenizer,
-            "model": AutoModel,
-        })
+        "llama": ModelClass(
+            **{
+                "tokenizer": LlamaTokenizer,
+                "model": LlamaForCausalLM,
+            }
+        ),
+        "chatglm": ModelClass(
+            **{
+                "tokenizer": AutoTokenizer,  # ChatGLMTokenizer,
+                "model": AutoModel,  # ChatGLMForConditionalGeneration,
+            }
+        ),
+        "bloom": ModelClass(
+            **{
+                "tokenizer": BloomTokenizerFast,
+                "model": BloomForCausalLM,
+            }
+        ),
+        "Auto": ModelClass(
+            **{
+                "tokenizer": AutoTokenizer,
+                "model": AutoModel,
+            }
+        ),
     }
-    model_type = "Auto" if args.model_type not in ["llama", "bloom", "chatglm"] else args.model_type
-    
+    model_type = (
+        "Auto"
+        if args.model_type not in ["llama", "bloom", "chatglm"]
+        else args.model_type
+    )
+
     if model_type == "chatglm":
         tokenizer = _MODEL_CLASSES[model_type].tokenizer.from_pretrained(
-            args.base_model,
-            trust_remote_code=True
+            args.base_model, trust_remote_code=True
         )
         model = _MODEL_CLASSES[model_type].model.from_pretrained(
             args.base_model,
             trust_remote_code=True,
-            device_map=device_map
+            low_cpu_mem_usage=True,
+            device_map=device_map,
         )
     else:
-        tokenizer = _MODEL_CLASSES[model_type].tokenizer.from_pretrained(args.base_model)
+        tokenizer = _MODEL_CLASSES[model_type].tokenizer.from_pretrained(
+            args.base_model
+        )
         model = _MODEL_CLASSES[model_type].model.from_pretrained(
             args.base_model,
             load_in_8bit=True,
-            device_map=device_map
+            low_cpu_mem_usage=True,
+            device_map=device_map,
         )
     if model_type == "llama":
         tokenizer.pad_token_id = 0
@@ -139,9 +155,14 @@ def load_lora_weight(model, lora_weight_path: str):
 @click.option("--lora_r", "lora_r", type=int, default=8)
 @click.option("--lora_alpha", "lora_alpha", type=int, default=16)
 @click.option("--lora_dropout", "lora_dropout", type=float, default=0.05)
-@click.option(
-    "--lora_target_modules", "lora_target_modules", cls=PythonLiteralOption, default='["q_proj","v_proj"]', help="the module to be injected, e.g. q_proj/v_proj/k_proj/o_proj for llama, query_key_value for bloom"
-)
+@click.option("--lora_target_modules", "lora_target_modules", type=str, default="q_proj,v_proj")
+# @click.option(
+#     "--lora_target_modules",
+#     "lora_target_modules",
+#     cls=PythonLiteralOption,
+#     default='["q_proj","v_proj"]',
+#     help="the module to be injected, e.g. q_proj,v_proj,k_proj,o_proj for llama, query_key_value for bloom",
+# )
 @click.option("--train_on_inputs", "train_on_inputs", type=bool, default=True)
 @click.option("--group_by_length", "group_by_length", type=bool, default=True)
 def main(
@@ -169,7 +190,8 @@ def main(
     # Trainer hyperparams
     train_on_inputs: bool,
     group_by_length: bool,
-):  
+):
+    lora_target_modules = lora_target_modules.split(",")
     print(
         f"Finetune parameters: \n"
         f"base_model: {base_model}\n"
@@ -228,13 +250,14 @@ def main(
         data_files["test"] = test_file
     data = load_dataset("json", data_files=data_files)
 
-
     def generate_and_tokenize_prompt(data_point):
         full_prompt = generate_prompt(data_point)
         tokenized_full_prompt = tokenize(tokenizer, full_prompt, cutoff_len)
         if not train_on_inputs:
             user_prompt = generate_prompt({**data_point, "output": ""})
-            tokenized_user_prompt = tokenize(tokenizer, user_prompt, cutoff_len, add_eos_token=False)
+            tokenized_user_prompt = tokenize(
+                tokenizer, user_prompt, cutoff_len, add_eos_token=False
+            )
             user_prompt_len = len(tokenized_user_prompt["input_ids"])
 
             tokenized_full_prompt["labels"] = [
@@ -242,7 +265,6 @@ def main(
             ] * user_prompt_len + tokenized_full_prompt["labels"][user_prompt_len:]
         return tokenized_full_prompt
 
-    
     if "test" in data:
         test_data = data["test"].shuffle().map(generate_and_tokenize_prompt)
     elif "val" in data:
@@ -267,28 +289,36 @@ def main(
             args=transformers.TrainingArguments(
                 per_device_eval_batch_size=micro_batch_size,
                 gradient_accumulation_steps=gradient_accumulation_steps,
-                output_dir=output_dir
+                output_dir=output_dir,
             ),
             data_collator=transformers.DataCollatorForSeq2Seq(
                 tokenizer,
                 model=model,
                 label_pad_token_id=-1,
                 pad_to_multiple_of=None,
-                padding=False
-            )
+                padding=False,
+            ),
         )
         predict_results = trainer.predict(test_data, metric_key_prefix="predict")
         if trainer.is_world_process_zero():
             predictions = tokenizer.batch_decode(
-                predict_results.predictions, skip_special_tokens=True, clean_up_tokenization_spaces=True
+                predict_results.predictions,
+                skip_special_tokens=True,
+                clean_up_tokenization_spaces=True,
             )
             predictions = [pred.strip() for pred in predictions]
             labels = tokenizer.batch_decode(
-                predict_results.label_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True
+                predict_results.label_ids,
+                skip_special_tokens=True,
+                clean_up_tokenization_spaces=True,
             )
             labels = [label.strip() for label in labels]
             output = [{"labels": l, "predict": p} for p, l in zip(predictions, labels)]
-            with open(os.path.join(args.output_dir, "predict_generation.json"), "w", encoding="utf-8") as writer:
+            with open(
+                os.path.join(args.output_dir, "predict_generation.json"),
+                "w",
+                encoding="utf-8",
+            ) as writer:
                 json.dump(output, writer, ensure_ascii=False, indent=4)
     else:
         trainer = transformers.Trainer(
