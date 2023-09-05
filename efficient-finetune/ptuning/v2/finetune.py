@@ -24,6 +24,7 @@ import os
 import sys
 
 import jieba
+import mlflow
 import numpy as np
 import torch
 import transformers
@@ -42,6 +43,8 @@ from transformers import (
     set_seed,
 )
 
+os.environ["MLFLOW_EXPERIMENT_NAME"] = "trainer-mlflow-demo"
+os.environ["MLFLOW_FLATTEN_PARAMS"] = "1"
 logger = logging.getLogger(__name__)
 
 
@@ -429,7 +432,8 @@ def main():
         trainer.log_metrics("train", metrics)
         trainer.save_metrics("train", metrics)
         trainer.save_state()
-
+        mlflow.end_run()
+        
     # Evaluation
     results = {}
     if training_args.do_eval:

@@ -52,14 +52,14 @@ def main(start_date: str, end_date: str):
         MODEL_TYPE=chatglm-6b
         MAX_LENGTH=512
         PRE_SEQ_LEN=512
-        BATCH_SIZE=4
+        BATCH_SIZE=3
         STEP=3000
         LR=2e-2
         DATATAG=multi-ee-no-instruction
         DATE_STR={date_str}
         CACHE_DIR=/home/jovyan/gpt/model/huggingface
 
-        CUDA_VISIBLE_DEVICES=2,3 accelerate launch --main_process_port 29051 --config_file ../../config/use_deepspeed.yaml finetune.py --do_predict \
+        CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch --main_process_port 29051 --config_file ../../config/use_deepspeed.yaml finetune.py --do_predict \
             --validation_file ../../../instruction-datasets/temp-largitdata/$DATE_STR.json \
             --test_file ../../../instruction-datasets/temp-largitdata/$DATE_STR.json \
             --overwrite_cache \
