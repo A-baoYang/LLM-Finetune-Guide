@@ -14,6 +14,10 @@ Switch language version: \[ [English](README.md) | [繁體中文](README-zhtw.md
 > If you want to reduce trial and error, you are welcome to enroll in my personally recorded step-by-step tutorial course:
 > - Fill out the survey to receive a discount voucher: [https://www.surveycake.com/s/kn0bL](https://www.surveycake.com/s/kn0bL)
 
+![A-baoYang's GitHub stats](https://github-readme-stats.vercel.app/api?username=A-baoYang&show=reviews,discussions_started,discussions_answered,prs_merged,prs_merged_percentage&theme=radical)
+
+
+
 <!-- ## 最新消息 Development Log
 
 - [2023/04/15] 更新新資料集： -->
