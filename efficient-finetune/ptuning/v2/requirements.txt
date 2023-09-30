@@ -6,3 +6,7 @@ gradio
 mdtex2html
 sentencepiece
 rouge-chinese
+jieba
+mlflow
+datasets
+nltk
