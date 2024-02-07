@@ -1,5 +1,5 @@
-MODEL_PATH=THUDM/chatglm-6b
-MODEL_TYPE=chatglm-6b
+MODEL_PATH=THUDM/chatglm2-6b
+MODEL_NAME=chatglm2-6b
 MAX_LENGTH=768
 PRE_SEQ_LEN=768
 LR=2e-2
@@ -18,9 +18,9 @@ CUDA_VISIBLE_DEVICES=0 python finetune.py \
     --response_column output \
     --overwrite_cache \
     --model_name_or_path $MODEL_PATH \
-    --output_dir finetuned/$DATATAG-$MODEL_TYPE-pt-$PRE_SEQ_LEN-$LR \
+    --output_dir finetuned/$DATATAG-$MODEL_NAME-pt-$PRE_SEQ_LEN-$LR \
     --cache_dir $CACHE_DIR \
-    # --resume_from_checkpoint finetuned/$DATATAG-$MODEL_TYPE-pt-$PRE_SEQ_LEN-$LR/checkpoint-100 \
+    # --resume_from_checkpoint finetuned/$DATATAG-$MODEL_NAME-pt-$PRE_SEQ_LEN-$LR/checkpoint-100 \
     --overwrite_output_dir \
     --max_source_length $MAX_LENGTH \
     --max_target_length $MAX_LENGTH \

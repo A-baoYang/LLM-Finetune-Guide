@@ -131,4 +131,6 @@ dmypy.json
 # Other
 mlruns/
 instruction-datasets/
+domain-datasets/
 finetuned/
+temp_data_cache_dir/
