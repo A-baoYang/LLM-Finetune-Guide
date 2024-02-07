@@ -1,0 +1,1 @@
+gsutil -m cp -r gs://backup/xxx/llm-finetune-guide/domain-datasets .
