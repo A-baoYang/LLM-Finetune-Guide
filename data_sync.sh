@@ -1,1 +1,3 @@
-gsutil -m cp -r gs://backup/xxx/llm-finetune-guide/domain-datasets .
+gsutil -m cp -r gs://backup-20231229/dst-financial-knowledge-graph/llm-finetune-guide/domain-datasets .
+gsutil -m cp -r gs://backup-20231229/dst-financial-knowledge-graph/llm-finetune-guide/data/medical/ministry-of-health-and-welfare-tw/medical-qa-zhcn instruction-datasets/
+gsutil -m cp -r gs://backup-20231229/dst-financial-knowledge-graph/llm-finetune-guide/data/social_media/dcard-wom instruction-datasets/
