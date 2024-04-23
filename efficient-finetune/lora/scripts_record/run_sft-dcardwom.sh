@@ -14,8 +14,8 @@ dataset_dir=/workspace/Code/LLM-Finetune-Guide/instruction-datasets/dcard-wom/tr
 per_device_train_batch_size=1
 per_device_eval_batch_size=1
 gradient_accumulation_steps=8
-num_train_epochs=5
-max_seq_length=512
+num_train_epochs=10
+max_seq_length=2048
 output_dir=/workspace/Code/LLM-Finetune-Guide/efficient-finetune/lora/finetuned/sft-dcardwom-llama2_7b-lora-llama2_7b-lora-${lora_rank}-${lora_alpha}-${lora_dropout}-${lr}-${per_device_train_batch_size}-${num_train_epochs}-${gradient_accumulation_steps}-${block_size}
 validation_file=/workspace/Code/LLM-Finetune-Guide/instruction-datasets/dcard-wom/val/dev.json
 
