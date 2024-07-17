@@ -1,0 +1,1 @@
+pip install git+https://github.com/huggingface/transformers torch accelerate bitsandbytes langchain sentencepiece flash_attn gradio datasets deepspeed

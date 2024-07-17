@@ -13,6 +13,7 @@ TEMPLATE = (
 parser = argparse.ArgumentParser()
 parser.add_argument('--base_model', default=None, type=str, required=True)
 parser.add_argument('--lora_model', default=None, type=str, help="If None, perform inference on the base model")
+parser.add_argument('--cache_dir', default=None, type=str)
 parser.add_argument('--tokenizer_path', default=None, type=str)
 parser.add_argument('--data_file', default=None, type=str, help="A file that contains instructions (one instruction per line)")
 parser.add_argument('--with_prompt', action='store_true', help="wrap the input with the prompt automatically")
@@ -143,6 +144,7 @@ if __name__ == '__main__':
 
         base_model = AutoModelForCausalLM.from_pretrained(
             args.base_model,
+            cache_dir=args.cache_dir,
             torch_dtype=load_type,
             low_cpu_mem_usage=True,
             device_map='auto',
@@ -161,6 +163,7 @@ if __name__ == '__main__':
                 )
             draft_base_model = LlamaForCausalLM.from_pretrained(
                 args.draft_base_model,
+                cache_dir=args.cache_dir,
                 torch_dtype=load_type,
                 low_cpu_mem_usage=True,
                 device_map='auto',

@@ -94,3 +94,23 @@ def save_data(data: Any, path: str) -> None:
                 f.write("\n")
     else:
         pass
+
+
+def write_jsonl(fname, json_objs):
+    with open(fname, 'wt', encoding='utf-8') as f:
+        for o in json_objs:
+            f.write(json.dumps(o, ensure_ascii=False) + '\n')
+
+
+def convert_to_jsonl(data_path, output_path):
+    list_of_dict = json.load(open(data_path, 'rt', encoding='utf-8'))
+    write_jsonl(output_path, list_of_dict)
+    return list_of_dict
+
+
+def remove_emojis(text):
+    import emoji
+    clean_text = ''.join(c for c in text if c not in emoji.EMOJI_DATA)
+    # emoji_list = [c for c in text if c in emoji.EMOJI_DATA]
+    # clean_text = ''.join([str for str in text if not any(i in str for i in emoji_list)])
+    return clean_text

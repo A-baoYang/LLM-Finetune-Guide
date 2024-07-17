@@ -1,24 +1,7 @@
-import torch
-from transformers import (
-    AutoModelForCausalLM,
-    LlamaForCausalLM,
-    LlamaTokenizer,
-    StoppingCriteria,
-    BitsAndBytesConfig,
-    GenerationConfig
-)
-import gradio as gr
 import argparse
 import os
-from queue import Queue
-from threading import Thread
-import traceback
-import gc
 import json
-import requests
-from typing import Iterable, List
-import subprocess
-import re
+
 
 DEFAULT_SYSTEM_PROMPT = """You are a helpful assistant. 你是一个乐于助人的助手。"""
 
@@ -33,6 +16,7 @@ TEMPLATE_WITHOUT_SYSTEM_PROMPT = "[INST] {instruction} [/INST]"
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser()
+parser.add_argument('--cache_dir', default=None, type=str)
 parser.add_argument(
     '--base_model',
     default=None,
@@ -52,7 +36,7 @@ parser.add_argument(
     type=str,
     help='If None, cuda:0 will be used. Inference using multi-cards: --gpus=0,1,... ')
 parser.add_argument('--share', default=True, help='Share gradio domain name')
-parser.add_argument('--port', default=19324, type=int, help='Port of gradio demo')
+parser.add_argument('--port', default=7865, type=int, help='Port of gradio demo')
 parser.add_argument(
     '--max_memory',
     default=1024,
@@ -134,6 +118,32 @@ if args.only_cpu is True:
         raise ValueError("Quantization is unavailable on CPU.")
 if args.load_in_8bit and args.load_in_4bit:
     raise ValueError("Only one quantization method can be chosen for inference. Please check your arguments")
+
+# Set CUDA devices if available
+os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
+
+import torch
+from transformers import (
+    AutoModelForCausalLM,
+    LlamaForCausalLM,
+    LlamaTokenizer,
+    StoppingCriteria,
+    BitsAndBytesConfig,
+    GenerationConfig
+)
+import gradio as gr
+
+from queue import Queue
+from threading import Thread
+import traceback
+import gc
+import requests
+from typing import Iterable, List
+import subprocess
+import re
+from opencc import OpenCC
+s2t = OpenCC('s2t')
+
 import sys
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
@@ -154,12 +164,9 @@ if args.speculative_sampling:
         raise ValueError("Only one quantization method can be chosen for inference. Please check your arguments")
     from speculative_sample import speculative_sample
 
-# Set CUDA devices if available
-os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
-
 
 # Peft library can only import after setting CUDA devices
-from peft import PeftModel
+from peftv2 import PeftModel
 
 
 # Set up the required components: model and tokenizer
@@ -220,6 +227,7 @@ def setup():
 
         base_model = AutoModelForCausalLM.from_pretrained(
             args.base_model,
+            cache_dir=args.cache_dir,
             torch_dtype=load_type,
             low_cpu_mem_usage=True,
             device_map='auto',
@@ -238,6 +246,7 @@ def setup():
                 )
             draft_base_model = LlamaForCausalLM.from_pretrained(
                 args.draft_base_model,
+                cache_dir=args.cache_dir,
                 torch_dtype=load_type,
                 low_cpu_mem_usage=True,
                 device_map='auto',
@@ -414,12 +423,14 @@ def post_http_request(prompt: str,
 
 
 def get_streaming_response(response: requests.Response) -> Iterable[List[str]]:
-    for chunk in response.iter_lines(chunk_size=8192,
-                                     decode_unicode=False,
-                                     delimiter=b"\0"):
+    # for chunk in response.iter_lines(chunk_size=8192,
+    #                                  decode_unicode=False,
+    #                                  delimiter=b"\0"):
+    for chunk in response.iter_content(chunk_size=32, decode_unicode=False, delimiter=b"\0"):
         if chunk:
             data = json.loads(chunk.decode("utf-8"))
-            output = data["text"]
+            # print(data["text"], end="", flush=True)
+            # output = s2t.convert(data["text"])
             yield output
 
 
@@ -547,7 +558,9 @@ def predict(
                 if isinstance(tokenizer, LlamaTokenizer) and len(next_token_ids) > 0:
                     if tokenizer.convert_ids_to_tokens(int(next_token_ids[0])).startswith('▁'):
                         new_tokens = ' ' + new_tokens
-
+                
+                new_tokens = s2t.convert(new_tokens)
+                # print(new_tokens, end="", flush=True)
                 history[-1][1] = new_tokens
                 yield history
                 if len(next_token_ids) >= max_new_tokens:
@@ -570,30 +583,27 @@ with gr.Blocks() as demo:
                     show_label=True,
                     label="系统提示语（仅在对话开始前或清空历史后修改有效，对话过程中修改无效）",
                     placeholder=DEFAULT_SYSTEM_PROMPT,
-                    lines=1).style(
-                    container=True)
+                    lines=1)
                 negative_prompt_input = gr.Textbox(
                     show_label=True,
                     label="反向提示语（仅在对话开始前或清空历史后修改有效，对话过程中修改无效）",
                     placeholder="（可选，默认为空）",
                     lines=1,
-                    visible=ENABLE_CFG_SAMPLING).style(
-                    container=True)
+                    visible=ENABLE_CFG_SAMPLING)
             with gr.Column(scale=12):
                 user_input = gr.Textbox(
                     show_label=True,
                     label="用户指令",
                     placeholder="Shift + Enter发送消息...",
-                    lines=10).style(
-                    container=True)
+                    lines=10)
             with gr.Column(min_width=32, scale=1):
                 submitBtn = gr.Button("Submit", variant="primary")
         with gr.Column(scale=1):
             emptyBtn = gr.Button("Clear History")
             max_new_token = gr.Slider(
                 0,
-                4096,
-                value=512,
+                128000,
+                value=4096,
                 step=1.0,
                 label="Maximum New Token Length",
                 interactive=True)

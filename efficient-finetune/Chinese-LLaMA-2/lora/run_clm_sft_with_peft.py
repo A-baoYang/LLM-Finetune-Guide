@@ -38,6 +38,7 @@ from transformers import (
     BitsAndBytesConfig,
     LlamaForCausalLM,
     LlamaTokenizer,
+    # PreTrainedTokenizerFast,
     AutoTokenizer,
     HfArgumentParser,
     Trainer,
@@ -331,7 +332,9 @@ def main():
     if model_args.tokenizer_name:
         tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, **tokenizer_kwargs)
     elif model_args.tokenizer_name_or_path:
-        tokenizer = LlamaTokenizer.from_pretrained(model_args.tokenizer_name_or_path, **tokenizer_kwargs)
+        tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name_or_path, **tokenizer_kwargs)
+        # tokenizer = LlamaTokenizer.from_pretrained(model_args.tokenizer_name_or_path, **tokenizer_kwargs)
+        # tokenizer = PreTrainedTokenizerFast.from_pretrained(model_args.tokenizer_name_or_path, **tokenizer_kwargs)
     else:
         raise ValueError(
             "You are instantiating a new tokenizer from scratch. This is not supported by this script."

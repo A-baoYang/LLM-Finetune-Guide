@@ -8,19 +8,21 @@ modules_to_save="embed_tokens,lm_head"
 lora_dropout=0.05
 
 pretrained_model=hfl/chinese-llama-2-7b
+cache_dir=/workspace/Code/models/huggingface
 chinese_tokenizer_path=/home/abaoyang/Chinese-LLaMA-Alpaca-2/scripts/tokenizer
 dataset_dir=/home/abaoyang/LLM-Finetune-Guide/domain-datasets/dentist/pretrain/txts-zhcn
-data_cache=/home/abaoyang/LLM-Finetune-Guide/efficient-finetune/lora/temp_data_cache_dir
+data_cache=/home/abaoyang/LLM-Finetune-Guide/efficient-finetune/Chinese-LLaMA-2/lora/temp_data_cache_dir
 per_device_train_batch_size=1
 gradient_accumulation_steps=8
 num_train_epochs=50
 block_size=512
-output_dir=/home/abaoyang/LLM-Finetune-Guide/efficient-finetune/lora/finetuned/pt-dentist_zhcn-llama2_7b-lora-${lora_rank}-${lora_alpha}-${lora_dropout}-${lr}-${per_device_train_batch_size}-${num_train_epochs}-${gradient_accumulation_steps}-${block_size}
+output_dir=/home/abaoyang/LLM-Finetune-Guide/efficient-finetune/Chinese-LLaMA-2/lora/finetuned/pt-dentist_zhcn-llama2_7b-lora-${lora_rank}-${lora_alpha}-${lora_dropout}-${lr}-${per_device_train_batch_size}-${num_train_epochs}-${gradient_accumulation_steps}-${block_size}
 
 deepspeed_config_file=ds_zero2_no_offload.json
 
 torchrun --nnodes 1 --nproc_per_node 1 run_clm_pt_with_peft.py \
     --deepspeed ${deepspeed_config_file} \
+    --cache_dir ${cache_dir} \
     --model_name_or_path ${pretrained_model} \
     --tokenizer_name_or_path ${chinese_tokenizer_path} \
     --dataset_dir ${dataset_dir} \
